@@ -24,6 +24,8 @@ def main(args):
     promptclass = getprompts(args.chat_format)
     prompts = [promptclass.getPrompt(example["prompt"]) for example in test_data]
 
+    # regroup the outputs to match the number of test data.
+    outputs = []
     if args.model_name_or_path:
         print("Loading model and tokenizer...")
         model, tokenizer = load_hf_lm_and_tokenizer(
@@ -40,7 +42,10 @@ def main(args):
         stop_sequences = ["\nclass", "\ndef", "\n#", "\nif", "\nprint"]
         # Because many tokenizers will treat the word after space differently from the original word alone,
         # to be consistent, we add a space before tokenization and remove it after tokenization.
-        stop_sequences = [tokenizer.encode(" " + x, add_special_tokens=False)[1:] for x in stop_sequences]
+        stop_sequences = [
+            tokenizer.encode(f" {x}", add_special_tokens=False)[1:]
+            for x in stop_sequences
+        ]
         print("stop sequences:")
         print(stop_sequences)
         if args.chat_format == "vicuna":
@@ -63,11 +68,11 @@ def main(args):
                 eos_token_id=tokenizer.eos_token_id,
             )
             outputs_per_sampling_iter.append(samping_outputs)
-        # regroup the outputs to match the number of test data.
-        outputs = []
         for i in range(len(prompts)):
-            for j in range(args.unbiased_sampling_size_n):
-                outputs.append(outputs_per_sampling_iter[j][i])
+            outputs.extend(
+                outputs_per_sampling_iter[j][i]
+                for j in range(args.unbiased_sampling_size_n)
+            )
     else:
         instances = [
             {
@@ -86,11 +91,11 @@ def main(args):
             temperature=args.temperature,
             n=args.unbiased_sampling_size_n,
         )
-        outputs = []
         for result in results:
-            for choice in result["response_metadata"]["choices"]:
-                outputs.append(choice["message"]["content"])
-
+            outputs.extend(
+                choice["message"]["content"]
+                for choice in result["response_metadata"]["choices"]
+            )
     # duplicates test data to match the number of outputs.
     duplicate_test_data = [example for example in test_data for _ in range(args.unbiased_sampling_size_n)]
     predictions = []

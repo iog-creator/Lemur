@@ -33,7 +33,13 @@ def eval_hf_model(args, model, tokenizer, examples, task_prompt, save_path=None)
                 + "<|im_end|>\n<|im_start|>assistant\nA:"
             )
         elif args.chat_format == "codellama-instruct":
-            prompt = "[INST]" + task_prompt.strip() + "\n\nQ:" + example["input"] + "[/INST]" + "\nA:"
+            prompt = (
+                f"[INST]{task_prompt.strip()}"
+                + "\n\nQ:"
+                + example["input"]
+                + "[/INST]"
+                + "\nA:"
+            )
         else:
             prompt = task_prompt.strip() + "\n\nQ: " + example["input"] + "\nA: "
         prompts.append(prompt)

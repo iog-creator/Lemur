@@ -225,13 +225,11 @@ def parse_args():
     )
     args = parser.parse_args()
 
-    # Sanity checks
     if args.dataset_name is None and args.train_file is None:
         raise ValueError("Need either a dataset name or a training file.")
-    else:
-        if args.train_file is not None:
-            extension = args.train_file.split(".")[-1]
-            assert extension in ["json", "jsonl"], "`train_file` should be a json/jsonl file."
+    if args.train_file is not None:
+        extension = args.train_file.split(".")[-1]
+        assert extension in ["json", "jsonl"], "`train_file` should be a json/jsonl file."
     return args
 
 
@@ -602,7 +600,7 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(
             args.model_name_or_path,
             cache_dir=args.cache_dir,
-            from_tf=bool(".ckpt" in args.model_name_or_path),
+            from_tf=".ckpt" in args.model_name_or_path,
             config=config,
             low_cpu_mem_usage=args.low_cpu_mem_usage,
         )
@@ -650,11 +648,19 @@ def main():
     no_decay = ["bias", "layer_norm.weight"]
     optimizer_grouped_parameters = [
         {
-            "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
+            "params": [
+                p
+                for n, p in model.named_parameters()
+                if all(nd not in n for nd in no_decay)
+            ],
             "weight_decay": args.weight_decay,
         },
         {
-            "params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)],
+            "params": [
+                p
+                for n, p in model.named_parameters()
+                if any(nd in n for nd in no_decay)
+            ],
             "weight_decay": 0.0,
         },
     ]
@@ -764,7 +770,7 @@ def main():
             active_dataloader = accelerator.skip_first_batches(train_dataloader, resume_step)
         else:
             active_dataloader = train_dataloader
-        for _step, batch in enumerate(active_dataloader):
+        for batch in active_dataloader:
             with accelerator.accumulate(model):
                 outputs = model(**batch, use_cache=False)
                 loss = outputs.loss

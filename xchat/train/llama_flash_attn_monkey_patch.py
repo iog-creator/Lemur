@@ -114,7 +114,10 @@ def forward(
     if self.config.pretraining_tp > 1:
         output = output.split(self.hidden_size // self.config.pretraining_tp, dim=2)
         o_proj_slices = self.o_proj.weight.split(self.hidden_size // self.config.pretraining_tp, dim=1)
-        output = sum([F.linear(output[i], o_proj_slices[i]) for i in range(self.config.pretraining_tp)])
+        output = sum(
+            F.linear(output[i], o_proj_slices[i])
+            for i in range(self.config.pretraining_tp)
+        )
     else:
         output = self.o_proj(output)
     return output, None, past_key_value
