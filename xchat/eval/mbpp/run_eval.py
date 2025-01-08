@@ -15,8 +15,7 @@ from xchat.eval.utils import generate_completions, load_hf_lm_and_tokenizer, que
 def prepare_inference_arg(args, test_data):
     res = []
     for example in test_data:
-        d = {}
-        d["prompt"] = getprompts(args.chat_format, args.few_shot).get_prompt(example)
+        d = {"prompt": getprompts(args.chat_format, args.few_shot).get_prompt(example)}
         d["reference"] = example["reference"]
         d["task_id"] = example["task_id"]
         res.append(d)
@@ -74,7 +73,10 @@ def main(args):
         )
 
         stop_sequences = ["\nassert", "\nprint"]
-        stop_sequences = [tokenizer.encode(" " + x, add_special_tokens=False)[1:] for x in stop_sequences]
+        stop_sequences = [
+            tokenizer.encode(f" {x}", add_special_tokens=False)[1:]
+            for x in stop_sequences
+        ]
         prompts = [example["prompt"] for example in test_data]
 
         outputs_per_sampling_iter = []

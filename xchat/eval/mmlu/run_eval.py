@@ -16,10 +16,7 @@ choices = ["A", "B", "C", "D"]
 
 def format_subject(subject):
     subject_list = subject.split("_")
-    s = ""
-    for entry in subject_list:
-        s += " " + entry
-    return s
+    return "".join(" " + entry for entry in subject_list)
 
 
 def format_example(df, idx, include_answer=True):
@@ -108,7 +105,7 @@ def eval_openai_chat_engine(args, subject, engine, dev_df, test_df, batch_size=1
         prompt = train_prompt + prompt_end
         prompts.append(prompt)
 
-    instances = [{"id": prompt, "prompt": prompt} for _, prompt in enumerate(prompts)]
+    instances = [{"id": prompt, "prompt": prompt} for prompt in prompts]
     results = query_openai_chat_model(
         engine=args.openai_engine,
         instances=instances,

@@ -86,7 +86,12 @@ def main(args):
                 "USER: " + prompt_prefix + "Question: " + example["question"].strip() + "\nASSISTANT: " + "Answer:"
             )
         elif args.chat_format == "codellama-instruct":
-            prompt = "[INST] " + prompt_prefix + "Question: " + example["question"].strip() + "[/INST]" + "Answer:"
+            prompt = (
+                f"[INST] {prompt_prefix}Question: "
+                + example["question"].strip()
+                + "[/INST]"
+                + "Answer:"
+            )
         elif args.chat_format == "llama-2-chat":
             system_message = """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your \
 answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure\
@@ -105,7 +110,11 @@ correct. If you don't know the answer to a question, please don't share false in
                 "Answer:"
             )
         else:
-            prompt = prompt_prefix + "Question: " + example["question"].strip() + "\nAnswer:"
+            prompt = (
+                f"{prompt_prefix}Question: "
+                + example["question"].strip()
+                + "\nAnswer:"
+            )
         prompts.append(prompt)
 
     if args.model_name_or_path:
@@ -125,7 +134,7 @@ correct. If you don't know the answer to a question, please don't share false in
                 [tokenizer.encode("<|im_end|>", add_special_tokens=False)[-1]],
                 [tokenizer.eos_token_id],
             ]
-        elif args.chat_format == "vicuna" or args.chat_format == "llama-2-chat":
+        elif args.chat_format in ["vicuna", "llama-2-chat"]:
             stop_id_sequences = [[tokenizer.encode("</s>", add_special_tokens=False)[-1]]]
         elif args.chat_format == "codellama-instruct":
             stop_id_sequences = [
@@ -144,7 +153,7 @@ correct. If you don't know the answer to a question, please don't share false in
             stop_id_sequences=stop_id_sequences,
         )
     else:
-        instances = [{"id": prompt, "prompt": prompt} for _, prompt in enumerate(prompts)]
+        instances = [{"id": prompt, "prompt": prompt} for prompt in prompts]
         results = query_openai_chat_model(
             engine=args.openai_engine,
             instances=instances,
@@ -157,8 +166,7 @@ correct. If you don't know the answer to a question, please don't share false in
     for output in outputs:
         # replace numbers like `x,xxx` with `xxxx`
         output = re.sub(r"(\d),(\d)", r"\1\2", output)
-        numbers = re.findall(r"[-+]?\d*\.\d+|\d+", output)
-        if numbers:
+        if numbers := re.findall(r"[-+]?\d*\.\d+|\d+", output):
             predictions.append(numbers[-1])
         else:
             predictions.append(output)
